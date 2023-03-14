@@ -1,60 +1,62 @@
-// Impor JDBC driver untuk PostgreSQL
-import java.sql.*;
+import ketai.sensors.*;
+import de.bezier.data.sql.*;
 
-// Deklarasikan variabel global untuk koneksi, statement, dan sql
-Connection conn;
-Statement stmt;
-String sql;
+PostgreSQL pgsql;
+KetaiLocation location;
 
-// Fungsi void setup() untuk mengatur program
+double longitude, latitude, altitude;
+int lastPrintTime = 0;
+
 void setup() {
-  // Tentukan ukuran jendela
-  size(640, 360);
+  size(displayWidth, displayHeight);
+  orientation(PORTRAIT);
+  location = new KetaiLocation(this);
 
-  // Buat koneksi ke database PolarDB PostgreSQL
-  String url = "jdbc:postgresql://megatroll.rwlb.ap-southeast-5.rds.aliyuncs.com:1921/appwebp5js";
   String user = "p5js_db";
-  String password = "bambang86!";
-
-  try {
-    conn = DriverManager.getConnection(url, user, password);
-    // Buat objek Statement untuk menjalankan perintah SQL
-    stmt = conn.createStatement();
-    // Buat tabel contoh di database PolarDB PostgreSQL
-    //sql = "CREATE TABLE example (id INT, name VARCHAR(20), age INT)";
-    //stmt.executeUpdate(sql);
-  } 
-  catch (Exception e) {
-    // Tangani pengecualian
-    e.printStackTrace();
-  }
+  String pass = "bambang86!";
+  String database = "appwebp5js";
+  
+  pgsql = new PostgreSQL(this, "megatroll.rwlb.ap-southeast-5.rds.aliyuncs.com:1921", database, user, pass);
+  
+  if (pgsql.connect()) {
+    // display the last 10 weather data entries in the table
+    pgsql.query("SELECT * FROM gps ORDER BY id");
+    while (pgsql.next()) {
+      println(pgsql.getString("id") + " " + pgsql.getInt("longitude") + " " + pgsql.getInt("latitude"));
+    }
+  } else {
+    println("Connection to database failed.");
+  }  
 }
 
-// Fungsi void draw() untuk menggambar program
 void draw() {
-  // Masukkan data ke tabel contoh
+  background(78, 93, 75);
+  if (location == null  || location.getProvider() == "none")
+    text("Location data is unavailable. \n" +
+      "Please check your location settings.", 0, 0, width, height);
+  else
+    text("Latitude: " + latitude + "\n" +
+      "Longitude: " + longitude + "\n" +
+      "Altitude: " + altitude + "\n" +
+      "Provider: " + location.getProvider(), 0, 0, width, height);
 
-  try {
-    //sql = "INSERT INTO datakuoke (id, uraian) VALUES (2, 'Alice')";
-    //stmt.executeUpdate(sql);
-    //sql = "INSERT INTO datakuoke (id, uraian) VALUES (3, 'Bob')";
-    //stmt.executeUpdate(sql);
-    //sql = "INSERT INTO datakuoke (id, uraian) VALUES (4, 'Charlie')";
-    //stmt.executeUpdate(sql);
+  // Print the values to the console every 0,5 second
+  if (millis() - lastPrintTime > 500) {
+    pgsql.query("INSERT INTO gps (longitude, latitude, altitude) VALUES (" + longitude + "," + latitude + "," + altitude +")");
     
-    sql = "DELETE FROM datakuoke WHERE ID = 4";
-    stmt.executeUpdate(sql);
+    pgsql.query("SELECT * FROM gps ORDER BY id");
+    while (pgsql.next()) {
+      println(pgsql.getString("id") + "," + pgsql.getInt("longitude") + "," + pgsql.getInt("latitude") + "," + pgsql.getInt("altitude"));
+    }
     
-
-    // Tutup objek Statement dan koneksi
-    stmt.close();
-    conn.close();
-  } 
-  catch (Exception e) {
-    // Tangani pengecualian
-    e.printStackTrace();
+    lastPrintTime = millis();
   }
-
-  // Hentikan program
-  noLoop();
 }
+
+void onLocationEvent(double _latitude, double _longitude, double _altitude)
+{
+  longitude = _longitude;
+  latitude = _latitude;
+  altitude = _altitude;
+}
+
