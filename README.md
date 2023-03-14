@@ -6,4 +6,4 @@
 * Once the installation is complete, open the Processing IDE by clicking on the desktop shortcut or by searching for it in the Start menu.
 * You can now start creating your Processing sketches by writing code in the IDE.
 
-![](https://cms.sevima.com//uploads/logoaplikasi/182.jpg)
+![](https://github.com/bamswoto/kirimpolardb/blob/master/pictures/processing_ide.png)
